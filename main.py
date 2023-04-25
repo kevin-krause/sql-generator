@@ -55,9 +55,8 @@ def getEstoque(query):
                     'CLASS_XYZ': int,
                     'TAXA_ESGOTAMENTO': float})
 
-    print(df)
-
-    df.to_csv(r'C:\Users\kevin.krause\Desktop\estoque_apollo\estoque_2023.csv', index = False)
+    df.to_csv(
+        r'"\\svbi\arquivos\DW\BI Estoque\estoque_2023.csv"', index=False)
 
 
 getEstoque(query=query)
