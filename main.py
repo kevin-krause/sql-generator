@@ -1,62 +1,54 @@
 import pyodbc
 import pandas as pd
 from sql import sql as query
-from config import prod
+import config as cfg
 
 
-def getEstoque(query):
-    conn = pyodbc.connect(prod)
+def returnQuery(query, dba) -> True:
 
-    sql = pd.read_sql(query, conn)
+    global results
 
-    df = pd.DataFrame(sql, columns=['EMPRESA', 'REVENDA', 'ANOMES', 'DAATA', 'ITEM_ESTOQUE', 'ITEM_ESTOQUE_PUB', 'DES_ITEM_ESTOQUE', 'MARCA', 'GRUPO', 'CATEGORIA', 'DES_CATEGORIA', 'IDENTIFICACAO', 'UTILIZACAO_ITEM', 'DIAS_SEM_MOVIMENTO', 'DIAS_MOVIMENTO_INICIAL', 'DTA_ULT_ENTRADA', 'VAL_ESTOQUE', 'QTD_CONTABIL', 'CUSTO_MEDIO', 'QTD_PEDIDA', 'QTD_RES_OFICINA', 'QTD_NEGOCIACAO',
-                      'QTD_ALOCADA', 'QTD_ORCADA', 'QTD_LITIGIO', 'QTD_TRANSITO', 'QTD_TERCEIROS', 'ORDEM_TRANSACAO', 'BASE_ICMS_RETIDO', 'QTD_CONFERENCIA', 'QTD_COMPROMETIDA', 'PRECO_CUSTO', 'PRECO_PUBLICO', 'VAL_ESTOQUE_SEM_ICMSRET', 'VAL_ICMS_RETIDO', 'DEMANDABALCAO', 'DEMANDAOFICINA', 'DEMANDATELEMARK', 'OCORRENCIAVENDAS', 'CLASS_ABC', 'CLASS_XYZ', 'TAXA_ESGOTAMENTO'])
+    conn = pyodbc.connect(dba)
+    cursor = conn.cursor().execute(query)
+    columns = [column[0] for column in cursor.description]
+    results = []
+    for row in cursor.fetchall():
+        results.append(dict(zip(columns, row)))
 
-    df = df.astype({"EMPRESA": int,
-                    "REVENDA": int,
-                    'ANOMES': int,
-                    'DAATA': str,
-                    'ITEM_ESTOQUE': int,
-                    'ITEM_ESTOQUE_PUB': str,
-                    'DES_ITEM_ESTOQUE': str,
-                    'MARCA': str,
-                    'GRUPO': int,
-                    'CATEGORIA': int,
-                    'DES_CATEGORIA': str,
-                    'IDENTIFICACAO': str,
-                    'UTILIZACAO_ITEM': str,
-                    'DIAS_SEM_MOVIMENTO': int,
-                    'DIAS_MOVIMENTO_INICIAL': int,
-                    'DTA_ULT_ENTRADA': str,
-                    'VAL_ESTOQUE': float,
-                    'QTD_CONTABIL': int,
-                    'CUSTO_MEDIO': float,
-                    'QTD_PEDIDA': int,
-                    'QTD_RES_OFICINA': int,
-                    'QTD_NEGOCIACAO': int,
-                    'QTD_ALOCADA': int,
-                    'QTD_ORCADA': int,
-                    'QTD_LITIGIO': int,
-                    'QTD_TRANSITO': int,
-                    'QTD_TERCEIROS': int,
-                    'ORDEM_TRANSACAO': int,
-                    'BASE_ICMS_RETIDO': float,
-                    'QTD_CONFERENCIA': int,
-                    'QTD_COMPROMETIDA': int,
-                    'PRECO_CUSTO': float,
-                    'PRECO_PUBLICO': float,
-                    'VAL_ESTOQUE_SEM_ICMSRET': float,
-                    'VAL_ICMS_RETIDO': float,
-                    'DEMANDABALCAO': int,
-                    'DEMANDAOFICINA': int,
-                    'DEMANDATELEMARK': int,
-                    'OCORRENCIAVENDAS': int,
-                    'CLASS_ABC': str,
-                    'CLASS_XYZ': int,
-                    'TAXA_ESGOTAMENTO': float})
-
-    df.to_csv(
-        r'"\\svbi\arquivos\DW\BI Estoque\estoque_2023.csv"', index=False)
+    results = pd.DataFrame(results)
 
 
-getEstoque(query=query)
+def insert(table: str):
+
+    columns = results.columns
+    colunas_formatadas = []
+    for i in columns:
+        colunas_formatadas.append(i)
+    colunas_formatadas = str(colunas_formatadas).replace(
+        "'", "").replace("[", "").replace("]", "")
+
+    valores_formatados = []
+    for i, row in enumerate(results.values):
+        for item in results.values[i]:
+            valores_formatados.append(str(results.values[i]))
+
+    for i, row in enumerate(valores_formatados):
+        valores_formatados[i] = valores_formatados[i].replace(
+            "Decimal('", "").replace("')", "").replace(",]", "]")
+
+    insert = []
+    for i in valores_formatados:
+
+        i = str(i).replace('[', '').replace(']', '')
+
+        sql = f'INSERT INTO {table} ({colunas_formatadas}) VALUES ({i});'
+        insert.append(sql)
+
+
+    with open(r'C:\Users\kevin.krause\Desktop\sankhya_dba_inc_updt_del\incert.sql', 'w') as f:
+        for x in insert:
+            f.write(f'{x}' + '\n')
+
+
+returnQuery(query=query, dba=cfg.prodSankhya)
+insert(table='TGFPRO', )
